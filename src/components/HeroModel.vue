@@ -67,18 +67,24 @@ const save = async () => {
         {{ hero?.id ? 'Edit Hero' : 'Add Hero' }}
       </h2>
 
-      <input v-model="name" type="text" placeholder="Name" class="w-full p-2 border rounded" />
+      <input
+        v-model="name"
+        v-auto-focus
+        type="text"
+        placeholder="Name"
+        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
       <input
         v-model="age"
         type="number"
         placeholder="Age (optional)"
-        class="w-full p-2 border rounded"
+        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
       <input
         v-model="secretName"
         type="text"
         placeholder="Secret Name"
-        class="w-full p-2 border rounded"
+        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
 
       <div class="flex justify-end gap-3 pt-2">
