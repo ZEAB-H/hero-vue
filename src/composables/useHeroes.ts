@@ -5,15 +5,19 @@ export interface Hero {
   name: string
   age?: number
   secret_name: string
+  imageUrl?: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface CreateHeroPayload {
   name: string
   age?: number
   secret_name: string
+  imageUrl?: string
 }
 
-const BASE_URL = 'http://localhost:8000'
+const STORAGE_KEY = 'heroVault_heroes'
 
 export function useHeroes() {
   const heroes = ref<Hero[]>([])
@@ -39,19 +43,46 @@ export function useHeroes() {
       )
   })
 
-  // API Methods with better error handling
+  const oldestHero = computed(() => {
+    return heroes.value
+      .filter((h) => h.age)
+      .reduce(
+        (oldest, current) => (!oldest || current.age! > oldest.age! ? current : oldest),
+        null as Hero | null,
+      )
+  })
+
+  // Local Storage Methods
+  const saveToStorage = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(heroes.value))
+    } catch (err) {
+      console.error('Failed to save heroes to localStorage:', err)
+      error.value = 'Failed to save data locally'
+    }
+  }
+
+  const loadFromStorage = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        heroes.value = JSON.parse(stored)
+      }
+    } catch (err) {
+      console.error('Failed to load heroes from localStorage:', err)
+      error.value = 'Failed to load saved data'
+    }
+  }
+
+  // CRUD Methods with local storage
   const fetchHeroes = async (): Promise<void> => {
     loading.value = true
     error.value = ''
 
     try {
-      const response = await fetch(`${BASE_URL}/heroes/`)
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      heroes.value = data
+      // Simulate network delay for better UX
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      loadFromStorage()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch heroes'
       console.error('Fetch heroes error:', err)
@@ -65,18 +96,22 @@ export function useHeroes() {
     error.value = ''
 
     try {
-      const response = await fetch(`${BASE_URL}/heroes/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 300))
 
-      if (!response.ok) {
-        throw new Error(`Failed to create hero: ${response.statusText}`)
+      const now = Date.now()
+      const newHero: Hero = {
+        id: now, // Use timestamp as ID
+        name: payload.name,
+        age: payload.age,
+        secret_name: payload.secret_name,
+        imageUrl: payload.imageUrl,
+        createdAt: now,
+        updatedAt: now,
       }
 
-      const newHero = await response.json()
       heroes.value.push(newHero)
+      saveToStorage()
       return newHero
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create hero'
@@ -92,21 +127,25 @@ export function useHeroes() {
     error.value = ''
 
     try {
-      const response = await fetch(`${BASE_URL}/heroes/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 300))
 
-      if (!response.ok) {
-        throw new Error(`Failed to update hero: ${response.statusText}`)
-      }
-
-      const updatedHero = await response.json()
       const index = heroes.value.findIndex((h) => h.id === id)
-      if (index !== -1) {
-        heroes.value[index] = updatedHero
+      if (index === -1) {
+        throw new Error('Hero not found')
       }
+
+      const updatedHero: Hero = {
+        ...heroes.value[index],
+        name: payload.name,
+        age: payload.age,
+        secret_name: payload.secret_name,
+        imageUrl: payload.imageUrl,
+        updatedAt: Date.now(),
+      }
+
+      heroes.value[index] = updatedHero
+      saveToStorage()
       return updatedHero
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update hero'
@@ -122,15 +161,17 @@ export function useHeroes() {
     error.value = ''
 
     try {
-      const response = await fetch(`${BASE_URL}/heroes/${id}`, {
-        method: 'DELETE',
-      })
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 200))
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete hero: ${response.statusText}`)
+      const initialLength = heroes.value.length
+      heroes.value = heroes.value.filter((h) => h.id !== id)
+
+      if (heroes.value.length === initialLength) {
+        throw new Error('Hero not found')
       }
 
-      heroes.value = heroes.value.filter((h) => h.id !== id)
+      saveToStorage()
       return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete hero'
@@ -161,6 +202,36 @@ export function useHeroes() {
     error.value = ''
   }
 
+  const clearAllHeroes = () => {
+    heroes.value = []
+    saveToStorage()
+  }
+
+  // Add some sample heroes for demo
+  const addSampleHeroes = async () => {
+    const sampleHeroes: CreateHeroPayload[] = [
+      {
+        name: 'Superman',
+        age: 35,
+        secret_name: 'Clark Kent',
+      },
+      {
+        name: 'Wonder Woman',
+        age: 3000,
+        secret_name: 'Diana Prince',
+      },
+      {
+        name: 'Batman',
+        age: 42,
+        secret_name: 'Bruce Wayne',
+      },
+    ]
+
+    for (const hero of sampleHeroes) {
+      await createHero(hero)
+    }
+  }
+
   return {
     // State
     heroes,
@@ -171,6 +242,7 @@ export function useHeroes() {
     heroCount,
     averageAge,
     youngestHero,
+    oldestHero,
 
     // Methods
     fetchHeroes,
@@ -180,5 +252,7 @@ export function useHeroes() {
     findHeroById,
     searchHeroes,
     clearError,
+    clearAllHeroes,
+    addSampleHeroes,
   }
 }
