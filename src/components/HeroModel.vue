@@ -83,7 +83,7 @@
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500'
                 }`"
-                @click="$refs.fileInput?.click()"
+                @click="fileInput?.click()"
               >
                 <div class="text-center">
                   <svg
@@ -225,7 +225,7 @@ import { useHeroImages } from '../composables/useHeroImages'
 import type { Hero } from '../composables/useHeroes'
 
 const props = defineProps<{
-  hero: { id?: number; name: string; age?: number; secret_name: string; imageUrl?: string } | null
+  hero: { id?: number; name: string; age?: number; secret_name: string; imageUrl?: string; createdAt?: number } | null
 }>()
 
 const emit = defineEmits(['close', 'saved'])
@@ -238,6 +238,7 @@ const secretName = ref('')
 const heroImageUrl = ref('')
 const uploadingFile = ref(false)
 const dragOver = ref(false)
+const fileInput = ref<HTMLInputElement>() // Add template ref typing
 
 watch(
   () => props.hero,
